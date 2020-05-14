@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Image, FlatList ,ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList ,ScrollView, TouchableOpacity, AsyncStorage } from 'react-native';
 import axios from 'axios'
 import Header from '../common/Header'
 import Card from '../common/Card'
@@ -15,9 +15,39 @@ class HomeScreen extends Component {
 
   componentDidMount(){
     axios.get('http://cookbookrecipes.in/test.php')
-    .then(res => this.setState((state => ({comments: res.data})))
+    .then(res => this.setState(({comments: res.data}))
     )
 }
+
+  storeData = async () => {
+    try {
+      await AsyncStorage.setItem('key', JSON.stringify(this.state.comments.map(user => user)))
+    } catch (error) {
+      console.log(error)
+    }
+  };
+
+  retrieveData = async (key) => {
+    try {
+      const value = await AsyncStorage.getItem(key);
+      if (value !== null) {
+        return (value)
+      } else {
+        console.log('error')
+      }
+    } catch (error) {
+    }
+  };
+
+  saveStorage = () => {
+    this.storeData()
+  }
+  
+  readStorage = () => {
+    this.retrieveData('key')
+    .then(result => this.setState({comments: JSON.parse(result) }))
+  }
+
 
 renderComments = () => {
  return  <FlatList
@@ -29,24 +59,24 @@ renderComments = () => {
               <Text>{item.comments}</Text>
            </View>
          )
-         
          }}
           />
+          
 }
 
 handleShowComment = () => {
   this.setState((state) => ({
     showComment: !state.showComment
   }))
+  this.saveStorage()
+  this.readStorage()
 }
 
+
   render() {
-    
     return (
-      
       <ScrollView style={styles.container}>
         <Header />
-
         <View>
         <Card />
         <View style={styles.img}>
@@ -59,13 +89,12 @@ handleShowComment = () => {
          <TextSection />
          </View>
 
-        <TouchableOpacity onPress={() => this.handleShowComment()}>
+        <TouchableOpacity onPress={() => this.handleShowComment()} >
          <View style={{marginLeft: 10}}>
          <Text style={{color: 'blue'}}>View all 30 comments </Text>
          {this.state.showComment ? this.renderComments() : null}
          </View>
          </TouchableOpacity>
-        
       </ScrollView>
       
     );
